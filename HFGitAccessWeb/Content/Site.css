@@ -22,3 +22,13 @@ select,
 textarea {
     max-width: 280px;
 }
+
+.branch
+{
+    color:red;
+}
+
+.tag
+{
+    color:green;
+}

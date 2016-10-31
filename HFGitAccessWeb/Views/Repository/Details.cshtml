@@ -1,0 +1,129 @@
+﻿@model Graph
+
+@functions{
+    public static string DecodeFromUtf8(string utf8String)
+    {
+        // copy the string as UTF-8 bytes.
+        byte[] utf8Bytes = new byte[utf8String.Length];
+        for (int i = 0; i < utf8String.Length; ++i)
+        {
+            //Debug.Assert( 0 <= utf8String[i] && utf8String[i] <= 255, "the char must be in byte's range");
+            utf8Bytes[i] = (byte)utf8String[i];
+        }
+
+        return System.Text.Encoding.UTF8.GetString(utf8Bytes, 0, utf8Bytes.Length);
+    }
+}
+
+@{
+    ViewBag.Title = "Details";
+}
+
+<h2>版本紀錄</h2>
+
+<div>
+    <h4>@Model.Name</h4>
+    <hr />
+    <div style="float:left;margin-top:15px">
+        <canvas id="canvas" width="120" height="1000"></canvas>
+    </div>
+    <ul id="nodeList" style="list-style-type: none; font:16px/24px arial">
+        @foreach (var node in Model.Nodes)
+        {
+
+
+            <li><span class="branch">@node.Branches</span><span class="tag">@node.Tags</span> <a href="#@node.Id">@node.Message</a></li>
+
+        }
+    </ul>
+    <hr />
+    <dl class="dl-horizontal"></dl>
+</div>
+<p>
+    @Html.ActionLink("Edit", "Edit", new { /* id = Model.PrimaryKey */ }) |
+    @Html.ActionLink("Back to List", "Index")
+</p>
+
+@section scripts{
+    <script src="~/Scripts/jQuery.DataLink.js" type="text/javascript"></script>
+    @*<script src="~/Scripts/jQuery.tmpl.min.js" type="text/javascript"></script>*@
+    <script type="text/javascript">
+        var repo = '@Model.Id';
+        var ctx = $("#canvas")[0].getContext('2d');
+        var nodes=@(Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Nodes)));
+        var links;
+
+        $(function () {
+
+            $("#title").text(repo);
+            links = @(Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Links)));
+            draw(nodes, links);
+        });
+
+        var h = 24;
+        var w = 16;
+        var r = 5;
+
+        function draw(nodes, links) {
+            var ww = 0
+            for (var i = 0; i < nodes.length; i++) {
+                if (nodes[i].X > ww) ww = nodes[i].X;
+            }
+            ctx.canvas.width = (ww + 2) * w;
+            ctx.canvas.height = nodes.length * h;
+            drawLinks(links);
+            drawNodes(nodes);
+           // $("#nodeTemplate").tmpl(nodes).appendTo("#nodeList");
+            //alert(nodes.length * h);
+        }
+
+        function drawNodes(nodes) {
+
+            for (var i = 0; i < nodes.length; i++) {
+                var node = nodes[i];
+                var x = node.X * w + w / 2;
+                var y = node.Y * h + h / 2;
+
+                ctx.fillStyle = "#ff8080";
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2, true);
+                ctx.fill();
+                ctx.closePath();
+
+                node.Id = node.Id.substring(0, 5);
+                //            ctx.fillStyle = "#333";
+                //            ctx.font = "14px Arial";
+                //            ctx.fillText(node.Message, 80, y + 4);
+            }
+        }
+
+
+        function drawLinks(links) {
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = "#808080";
+
+            for (var i = 0; i < links.length; i++) {
+
+                var link = links[i];
+                var x1 = link.X1 * w + w / 2;
+                var y1 = link.Y1 * h + h / 2;
+                var x2 = link.X2 * w + w / 2;
+                var y2 = link.Y2 * h + h / 2;
+                var y3 = (link.Y2 - 1) * h + h / 2;
+
+                if (link.X1 == link.X2) {
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                }
+                else {
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x1, y3);
+                    ctx.bezierCurveTo(x1, y2, x2, y3, x2, y2);
+                }
+                ctx.stroke();
+            }
+        }
+
+    </script>
+}
